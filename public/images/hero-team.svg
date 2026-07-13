@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1300" width="900" height="1300" role="img" aria-label="夕暮れの雪山とスキートレイルのイラスト">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#16213e" />
+      <stop offset="35%" stop-color="#5b4b8a" />
+      <stop offset="65%" stop-color="#d97a4d" />
+      <stop offset="100%" stop-color="#f7c873" />
+    </linearGradient>
+    <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffe9c2" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#ffe9c2" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <rect x="0" y="0" width="900" height="1300" fill="url(#sky)" />
+
+  <g fill="#ffffff" opacity="0.6">
+    <circle cx="90" cy="120" r="2" />
+    <circle cx="180" cy="80" r="1.5" />
+    <circle cx="260" cy="180" r="2" />
+    <circle cx="340" cy="90" r="1.5" />
+    <circle cx="430" cy="150" r="2" />
+    <circle cx="520" cy="70" r="1.5" />
+    <circle cx="610" cy="130" r="2" />
+    <circle cx="700" cy="60" r="1.5" />
+    <circle cx="780" cy="160" r="2" />
+    <circle cx="120" cy="240" r="1.5" />
+    <circle cx="850" cy="100" r="2" />
+  </g>
+
+  <circle cx="620" cy="760" r="150" fill="url(#sunGlow)" />
+  <circle cx="620" cy="760" r="58" fill="#ffe9c2" opacity="0.9" />
+
+  <!-- 背景の山並み -->
+  <polygon
+    points="0,560 110,430 230,540 360,390 500,520 630,440 760,540 900,470 900,1300 0,1300"
+    fill="#4b3f72"
+    opacity="0.55"
+  />
+
+  <!-- 中景の山並み -->
+  <polygon
+    points="0,760 140,610 260,700 400,560 540,690 680,600 820,700 900,650 900,1300 0,1300"
+    fill="#3a2f5c"
+    opacity="0.8"
+  />
+
+  <!-- 前景の山並み(最も濃い) -->
+  <polygon
+    points="0,980 150,800 300,920 470,760 620,900 760,780 900,940 900,1300 0,1300"
+    fill="#241c3d"
+  />
+
+  <!-- 前景の雪冠 -->
+  <g fill="#f6ede0" opacity="0.9">
+    <polygon points="150,800 190,840 175,845 150,825 125,845 110,840" />
+    <polygon points="470,760 515,805 498,810 470,788 442,810 425,805" />
+    <polygon points="760,780 800,818 785,823 760,802 735,823 720,818" />
+  </g>
+
+  <!-- スキートレイル -->
+  <path
+    d="M 470 790 C 520 850, 430 900, 490 960 C 550 1020, 440 1070, 500 1140 C 540 1190, 470 1230, 500 1290"
+    fill="none"
+    stroke="#f6ede0"
+    stroke-width="6"
+    stroke-linecap="round"
+    stroke-dasharray="2 16"
+    opacity="0.85"
+  />
+
+  <!-- スキーヤーのシルエット -->
+  <g transform="translate(486, 955)">
+    <circle r="9" fill="#f6ede0" />
+    <circle cx="-3" cy="-16" r="5" fill="#f6ede0" />
+  </g>
+
+  <!-- 手前の樹木のシルエット -->
+  <g fill="#1a1430">
+    <polygon points="60,1300 80,1200 100,1300" />
+    <polygon points="95,1300 118,1180 141,1300" />
+    <polygon points="780,1300 800,1210 820,1300" />
+    <polygon points="815,1300 838,1170 861,1300" />
+  </g>
+</svg>
