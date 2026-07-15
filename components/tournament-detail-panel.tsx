@@ -35,7 +35,7 @@ function formatDate(date: string | null) {
 
 /**
  * 大会基本情報・参加選手・引率者アサインの3カードをまとめて表示する。
- * 大会詳細ページ(/dashboard/tournaments/[id])とガントチャートページの
+ * 大会詳細ページ(/dashboard/tournaments/[id])と大会スケジュールページの
  * 両方から再利用される。
  */
 export async function TournamentDetailPanel({

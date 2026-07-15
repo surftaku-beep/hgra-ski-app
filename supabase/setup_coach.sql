@@ -142,7 +142,7 @@ create table if not exists public.tournaments (
   end_date     date,
   location     text,
   description  text,        -- 大会の概要・メモ
-  grade        text,        -- 'FIS', 'SAJ A級', 'SAJ B級'
+  grade        text,        -- 'FIS', 'A', 'A(YH)', 'B', 'B(YT)'
   age_category text,        -- 'キッズ U8' など対象カテゴリ
   created_at   timestamptz not null default now()
 );
@@ -158,7 +158,7 @@ alter table public.tournaments add column if not exists age_category text;
 -- DROP → ADD で冪等に定義し直す。NULLは許容する。
 alter table public.tournaments drop constraint if exists tournaments_grade_check;
 alter table public.tournaments add constraint tournaments_grade_check check (
-  grade is null or grade in ('FIS', 'SAJ A級', 'SAJ B級')
+  grade is null or grade in ('FIS', 'A', 'A(YH)', 'B', 'B(YT)')
 );
 
 alter table public.tournaments drop constraint if exists tournaments_age_category_check;

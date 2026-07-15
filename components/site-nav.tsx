@@ -32,7 +32,7 @@ const MANAGEMENT_MENU: NavItem[] = [
   { href: "/dashboard/schedule", label: "スケジュール" },
   { href: "/dashboard/news", label: "ニュース管理" },
   { href: "/dashboard/team-profile", label: "チーム紹介編集" },
-  { href: "/dashboard/gantt", label: "ガントチャート" },
+  { href: "/dashboard/gantt", label: "大会スケジュール" },
   { href: "/dashboard/users", label: "ユーザー管理" },
 ];
 

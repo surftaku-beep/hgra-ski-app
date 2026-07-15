@@ -33,7 +33,7 @@ export type Guardian = {
   note: string | null;
 };
 
-export const TOURNAMENT_GRADES = ["FIS", "SAJ A級", "SAJ B級"] as const;
+export const TOURNAMENT_GRADES = ["FIS", "A", "A(YH)", "B", "B(YT)"] as const;
 export type TournamentGrade = (typeof TOURNAMENT_GRADES)[number];
 
 export const TOURNAMENT_AGE_CATEGORIES = [

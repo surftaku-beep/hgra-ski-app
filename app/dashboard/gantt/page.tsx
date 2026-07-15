@@ -29,7 +29,7 @@ export default async function GanttPage({
     <div className="space-y-10">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          ガントチャート
+          大会スケジュール
         </h1>
         <p className="text-muted-foreground text-sm">
           大会の開催期間を一覧できます。バーをクリックすると詳細が下に表示されます。
