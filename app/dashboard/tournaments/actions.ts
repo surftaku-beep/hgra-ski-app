@@ -26,25 +26,28 @@ function normalizeSelect(value: FormDataEntryValue | null) {
 }
 
 // day_1_date/day_1_discipline/day_1_gender ... day_10_* から、
-// 日付が入力された行だけをtournament_daysへの保存用データに変換する
+// 日付と競技(discipline)の両方が入力された行だけをtournament_daysへの
+// 保存用データに変換する。競技が「未設定」のままの行は、ユーザーが
+// 意図せず空の行を送ってしまったものとみなして除外する(男女は任意のまま)。
 function buildTournamentDays(formData: FormData, tournamentId: string) {
   const days: {
     tournament_id: string;
     day_index: number;
     event_date: string;
-    discipline: string | null;
+    discipline: string;
     gender: string | null;
   }[] = [];
 
   for (let dayNumber = 1; dayNumber <= TOURNAMENT_MAX_DAYS; dayNumber++) {
     const eventDate = normalizeOptional(formData.get(`day_${dayNumber}_date`));
-    if (!eventDate) continue;
+    const discipline = normalizeSelect(formData.get(`day_${dayNumber}_discipline`));
+    if (!eventDate || !discipline) continue;
 
     days.push({
       tournament_id: tournamentId,
       day_index: dayNumber,
       event_date: eventDate,
-      discipline: normalizeSelect(formData.get(`day_${dayNumber}_discipline`)),
+      discipline,
       gender: normalizeSelect(formData.get(`day_${dayNumber}_gender`)),
     });
   }
