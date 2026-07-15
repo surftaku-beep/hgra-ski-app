@@ -30,9 +30,8 @@ export default async function LoginPage({
           sizes="(min-width: 768px) 50vw, 100vw"
           className="object-cover object-center"
         />
-        {/* 紫のトーンを保つ半透明レイヤー: 全体の膜 + テキスト側を濃くして可読性を確保 */}
-        <div className="absolute inset-0 bg-purple-950/70" />
-        <div className="absolute inset-0 bg-gradient-to-t from-purple-950/90 via-purple-900/40 to-transparent md:bg-gradient-to-r" />
+        {/* テキスト側を暗くして可読性を確保する黒系グラデーション */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent md:bg-gradient-to-r" />
         <div className="absolute inset-0 flex flex-col justify-end p-8 text-white md:justify-center md:p-12">
           <p className="text-xs font-medium tracking-widest text-white/70 uppercase">
             Coach Dashboard
