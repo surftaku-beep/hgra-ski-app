@@ -24,3 +24,11 @@ export async function getIsCoachOrAdmin(
   const role = await getUserRole(supabase, userId);
   return role === "admin" || role === "coach";
 }
+
+export async function getIsAdmin(
+  supabase: SupabaseClient,
+  userId: string | undefined,
+) {
+  const role = await getUserRole(supabase, userId);
+  return role === "admin";
+}

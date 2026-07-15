@@ -26,7 +26,7 @@ export default async function GanttPage({
     .returns<Pick<Tournament, "id" | "name" | "start_date" | "end_date">[]>();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
           ガントチャート

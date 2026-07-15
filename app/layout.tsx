@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "スキーチーム コーチシステム",
-  description: "コーチ専用 選手管理・成績管理システム",
+  description: "スキーチームの公式サイト兼コーチ専用の活動管理システム",
 };
 
 export default function RootLayout({
@@ -30,7 +31,8 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <Header />
-        {children}
+        <div className="flex flex-1 flex-col">{children}</div>
+        <Footer />
       </body>
     </html>
   );

@@ -13,7 +13,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { deleteAthlete } from "@/app/dashboard/actions";
+import { deleteAthlete } from "@/app/dashboard/athletes/actions";
 
 export function DeleteAthleteButton({
   id,

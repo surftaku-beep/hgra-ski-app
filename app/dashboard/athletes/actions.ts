@@ -47,7 +47,7 @@ export async function createAthlete(
     return { error: `登録に失敗しました: ${error.message}` };
   }
 
-  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/athletes");
   return { success: true };
 }
 
@@ -73,7 +73,7 @@ export async function updateAthlete(
     return { error: `更新に失敗しました: ${error.message}` };
   }
 
-  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/athletes");
   return { success: true };
 }
 
@@ -85,6 +85,6 @@ export async function deleteAthlete(id: string): Promise<{ error?: string }> {
     return { error: `削除に失敗しました: ${error.message}` };
   }
 
-  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/athletes");
   return {};
 }

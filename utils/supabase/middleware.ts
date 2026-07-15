@@ -1,7 +1,16 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login"];
+// "/dashboard" 配下のみ認証必須。それ以外(公開サイト側)は誰でも閲覧可能。
+const PROTECTED_PREFIX = "/dashboard";
+// ログイン済みユーザーがアクセスすると /dashboard へ転送するパス
+const AUTH_ONLY_PREFIX = "/login";
+
+// "/dashboard-preview" のような別ルートを誤って保護対象にしないよう、
+// 完全一致 または "/prefix/" で始まる場合のみマッチさせる
+function matchesPrefix(pathname: string, prefix: string) {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -33,17 +42,17 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isPublicPath = PUBLIC_PATHS.some((path) =>
-    request.nextUrl.pathname.startsWith(path),
-  );
+  const pathname = request.nextUrl.pathname;
+  const isProtectedPath = matchesPrefix(pathname, PROTECTED_PREFIX);
+  const isAuthOnlyPath = matchesPrefix(pathname, AUTH_ONLY_PREFIX);
 
-  if (!user && !isPublicPath) {
+  if (!user && isProtectedPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  if (user && isPublicPath) {
+  if (user && isAuthOnlyPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);

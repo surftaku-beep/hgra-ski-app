@@ -68,10 +68,10 @@ export default async function AthleteDetailPage({
     .maybeSingle<Evaluation>();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <div>
         <Link
-          href="/dashboard"
+          href="/dashboard/athletes"
           className="text-muted-foreground text-sm transition-colors hover:text-foreground"
         >
           ← 選手一覧に戻る

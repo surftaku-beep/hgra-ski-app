@@ -134,7 +134,7 @@ export async function TournamentDetailPanel({
     }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <Card>
         <CardHeader>
           <CardTitle>大会基本情報</CardTitle>

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { InviteUserForm } from "@/components/invite-user-form";
+import { DeleteUserButton } from "@/components/delete-user-button";
 import { createClient } from "@/utils/supabase/server";
 import { getUserRole } from "@/utils/supabase/role";
 import type { Athlete, CoachDirectoryEntry } from "@/app/dashboard/types";
@@ -33,9 +34,12 @@ export default async function UsersPage() {
     data: { user },
   } = await supabase.auth.getUser();
   const role = await getUserRole(supabase, user?.id);
-  const isCoachOrAdmin = role === "admin" || role === "coach";
+  const isAdmin = role === "admin";
 
-  const [{ data: users }, { data: unlinkedAthletes }] = await Promise.all([
+  const [
+    { data: users },
+    { data: unlinkedAthletes, error: unlinkedAthletesError },
+  ] = await Promise.all([
     supabase.rpc("get_coach_directory"),
     supabase
       .from("athletes")
@@ -45,6 +49,13 @@ export default async function UsersPage() {
       .returns<Pick<Athlete, "id" | "name">[]>(),
   ]);
 
+  if (unlinkedAthletesError) {
+    console.error(
+      "[UsersPage] failed to load unlinked athletes:",
+      unlinkedAthletesError,
+    );
+  }
+
   const userList = (users ?? []) as CoachDirectoryEntry[];
   const athleteOptions = (unlinkedAthletes ?? []).map((athlete) => ({
     value: athlete.id,
@@ -52,7 +63,7 @@ export default async function UsersPage() {
   }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
           ユーザー管理
@@ -62,25 +73,30 @@ export default async function UsersPage() {
         </p>
       </div>
 
-      {isCoachOrAdmin ? (
+      {isAdmin ? (
         <Card>
           <CardHeader>
             <CardTitle>新規ユーザーを招待</CardTitle>
             <CardDescription>
-              招待メールが送信され、本人がパスワードを設定してログインできるようになります。
-              {role !== "admin"
-                ? " 管理者(admin)ロールの付与はadminのみ行えます。"
-                : ""}
+              招待メールが送信され、本人がパスワードを設定してログインできるようになります。ユーザーの招待はadminのみ行えます。
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <InviteUserForm
-              canGrantAdmin={role === "admin"}
-              athleteOptions={athleteOptions}
-            />
+            {unlinkedAthletesError ? (
+              <p className="text-destructive text-sm">
+                選手一覧の取得に失敗しました({unlinkedAthletesError.message}
+                )。データベースのスキーマが最新か確認してください。
+              </p>
+            ) : (
+              <InviteUserForm canGrantAdmin athleteOptions={athleteOptions} />
+            )}
           </CardContent>
         </Card>
-      ) : null}
+      ) : (
+        <p className="text-muted-foreground text-sm">
+          新規ユーザーの招待はadminのみ行えます。
+        </p>
+      )}
 
       <Card>
         <CardHeader>
@@ -98,6 +114,9 @@ export default async function UsersPage() {
                 <TableRow>
                   <TableHead>メールアドレス</TableHead>
                   <TableHead>役割</TableHead>
+                  {isAdmin ? (
+                    <TableHead className="text-right">操作</TableHead>
+                  ) : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -111,6 +130,16 @@ export default async function UsersPage() {
                         {ROLE_LABELS[entry.role] ?? entry.role}
                       </Badge>
                     </TableCell>
+                    {isAdmin ? (
+                      <TableCell className="text-right">
+                        {entry.id !== user?.id ? (
+                          <DeleteUserButton
+                            id={entry.id}
+                            email={entry.email ?? entry.id}
+                          />
+                        ) : null}
+                      </TableCell>
+                    ) : null}
                   </TableRow>
                 ))}
               </TableBody>

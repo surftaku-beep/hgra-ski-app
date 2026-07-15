@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BrandWatermark } from "@/components/brand-watermark";
 import { login } from "./actions";
 
 export default async function LoginPage({
@@ -22,15 +23,16 @@ export default async function LoginPage({
     <div className="grid flex-1 md:grid-cols-2">
       <div className="relative h-64 md:h-auto">
         <Image
-          src="/images/hero-team.svg"
-          alt="夕暮れの雪山を滑るスキートレイルのイメージ"
+          src="/images/HGRA.png"
+          alt="HGRA スキーチーム"
           fill
           priority
-          unoptimized
           sizes="(min-width: 768px) 50vw, 100vw"
-          className="object-cover"
+          className="object-cover object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent md:bg-gradient-to-r" />
+        {/* 紫のトーンを保つ半透明レイヤー: 全体の膜 + テキスト側を濃くして可読性を確保 */}
+        <div className="absolute inset-0 bg-purple-950/70" />
+        <div className="absolute inset-0 bg-gradient-to-t from-purple-950/90 via-purple-900/40 to-transparent md:bg-gradient-to-r" />
         <div className="absolute inset-0 flex flex-col justify-end p-8 text-white md:justify-center md:p-12">
           <p className="text-xs font-medium tracking-widest text-white/70 uppercase">
             Coach Dashboard
@@ -46,8 +48,9 @@ export default async function LoginPage({
         </div>
       </div>
 
-      <div className="flex items-center justify-center p-8">
-        <Card className="w-full max-w-sm">
+      <div className="relative flex items-center justify-center overflow-hidden p-8">
+        <BrandWatermark className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+        <Card className="relative z-10 w-full max-w-sm">
           <CardHeader>
             <CardTitle>コーチ ログイン</CardTitle>
             <CardDescription>

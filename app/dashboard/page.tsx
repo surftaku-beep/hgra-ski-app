@@ -2,45 +2,124 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { AthleteFormDialog } from "@/components/athlete-form-dialog";
-import { DeleteAthleteButton } from "@/components/delete-athlete-button";
 import { createClient } from "@/utils/supabase/server";
-import { getIsCoachOrAdmin } from "@/utils/supabase/role";
-import type { Athlete } from "@/app/dashboard/types";
 
-export default async function DashboardPage() {
+type TimelineItemType = "news" | "schedule" | "evaluation";
+
+type TimelineItem = {
+  id: string;
+  type: TimelineItemType;
+  title: string;
+  date: string;
+  href: string;
+  description?: string | null;
+};
+
+const TYPE_LABELS: Record<TimelineItemType, string> = {
+  news: "ニュース",
+  schedule: "予定",
+  evaluation: "コーチング記録",
+};
+
+type EvaluationTimelineRow = {
+  id: string;
+  athlete_id: string;
+  updated_at: string;
+  athlete: { id: string; name: string } | null;
+};
+
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export default async function DashboardHomePage() {
   const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isCoachOrAdmin = await getIsCoachOrAdmin(supabase, user?.id);
+  const nowIso = new Date().toISOString();
 
-  const { data: athletes, error } = await supabase
-    .from("athletes")
-    .select("id, name, category, grade, affiliation, saj_id, birth_year")
-    .order("name")
-    .returns<Athlete[]>();
+  const [
+    { data: newsList },
+    { data: scheduleEntries },
+    { data: evaluations },
+  ] = await Promise.all([
+    supabase
+      .from("news")
+      .select("id, title, slug, published_at")
+      .eq("is_published", true)
+      .order("published_at", { ascending: false })
+      .limit(5),
+    user
+      ? supabase
+          .from("personal_schedule")
+          .select("id, title, start_at")
+          .eq("coach_id", user.id)
+          .gte("start_at", nowIso)
+          .order("start_at", { ascending: true })
+          .limit(5)
+      : Promise.resolve({ data: null }),
+    user
+      ? supabase
+          .from("evaluations")
+          .select("id, athlete_id, updated_at, athlete:athletes(id, name)")
+          .eq("coach_id", user.id)
+          .order("updated_at", { ascending: false })
+          .limit(5)
+          .returns<EvaluationTimelineRow[]>()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  const timeline: TimelineItem[] = [
+    ...(newsList ?? [])
+      .filter((item) => item.published_at)
+      .map(
+        (item): TimelineItem => ({
+          id: `news-${item.id}`,
+          type: "news",
+          title: item.title,
+          date: item.published_at as string,
+          href: `/news/${item.slug}`,
+        }),
+      ),
+    ...(scheduleEntries ?? []).map(
+      (entry): TimelineItem => ({
+        id: `schedule-${entry.id}`,
+        type: "schedule",
+        title: entry.title,
+        date: entry.start_at,
+        href: "/dashboard/schedule",
+      }),
+    ),
+    ...(evaluations ?? []).map(
+      (evaluation): TimelineItem => ({
+        id: `evaluation-${evaluation.id}`,
+        type: "evaluation",
+        title: evaluation.athlete
+          ? `${evaluation.athlete.name} の評価を更新`
+          : "評価を更新",
+        date: evaluation.updated_at,
+        href: `/dashboard/athletes/${evaluation.athlete_id}`,
+      }),
+    ),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <div className="flex justify-center">
         <Image
           src="/HGRA_BLACK.png"
@@ -53,103 +132,47 @@ export default async function DashboardPage() {
       </div>
 
       <div className="text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          ダッシュボード
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight">ホーム</h1>
         <p className="text-muted-foreground text-sm">
-          登録されている選手の一覧です。
+          ニュース・個人の予定・コーチング記録をまとめて表示します。
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>選手一覧</CardTitle>
+          <CardTitle>タイムライン</CardTitle>
           <CardDescription>
-            {athletes
-              ? `${athletes.length}名の選手が登録されています。`
-              : "選手データを取得できませんでした。"}
+            {timeline.length > 0
+              ? `${timeline.length}件の更新があります。`
+              : "表示できる更新はまだありません。"}
           </CardDescription>
-          {isCoachOrAdmin ? (
-            <CardAction>
-              <AthleteFormDialog
-                mode="create"
-                trigger={<Button size="sm">選手を登録</Button>}
-              />
-            </CardAction>
-          ) : null}
         </CardHeader>
         <CardContent>
-          {error ? (
-            <p className="text-destructive text-sm">
-              選手データの取得に失敗しました。Supabaseの接続設定
-              (.env.local) とRLSポリシーを確認してください。
-              <br />
-              <span className="text-muted-foreground">
-                詳細: {error.message}
-              </span>
-            </p>
-          ) : !athletes || athletes.length === 0 ? (
+          {timeline.length === 0 ? (
             <p className="text-muted-foreground text-sm">
-              まだ選手が登録されていません。
+              ニュースが公開されたり、予定・評価メモを登録すると、ここに表示されます。
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>氏名</TableHead>
-                  <TableHead>クラス</TableHead>
-                  <TableHead>学年</TableHead>
-                  <TableHead>所属</TableHead>
-                  <TableHead>SAJ ID</TableHead>
-                  {isCoachOrAdmin ? (
-                    <TableHead className="text-right">操作</TableHead>
-                  ) : null}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {athletes.map((athlete) => (
-                  <TableRow key={athlete.id}>
-                    <TableCell className="font-medium">
-                      <Link
-                        href={`/dashboard/athletes/${athlete.id}`}
-                        className="hover:underline"
-                      >
-                        {athlete.name}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      {athlete.category ? (
-                        <Badge variant="secondary">{athlete.category}</Badge>
-                      ) : (
-                        <span className="text-muted-foreground">未設定</span>
-                      )}
-                    </TableCell>
-                    <TableCell>{athlete.grade ?? "-"}</TableCell>
-                    <TableCell>{athlete.affiliation ?? "-"}</TableCell>
-                    <TableCell>{athlete.saj_id ?? "-"}</TableCell>
-                    {isCoachOrAdmin ? (
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <AthleteFormDialog
-                            mode="edit"
-                            athlete={athlete}
-                            trigger={
-                              <Button variant="ghost" size="sm">
-                                編集
-                              </Button>
-                            }
-                          />
-                          <DeleteAthleteButton
-                            id={athlete.id}
-                            name={athlete.name}
-                          />
-                        </div>
-                      </TableCell>
-                    ) : null}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <ul className="divide-y">
+              {timeline.map((item) => (
+                <li key={item.id} className="flex items-start gap-3 py-3">
+                  <Badge variant="secondary" className="mt-0.5 shrink-0">
+                    {TYPE_LABELS[item.type]}
+                  </Badge>
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={item.href}
+                      className="font-medium hover:underline"
+                    >
+                      {item.title}
+                    </Link>
+                    <p className="text-muted-foreground text-xs">
+                      {formatDateTime(item.date)}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
         </CardContent>
       </Card>

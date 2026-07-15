@@ -36,7 +36,7 @@ export default async function GuardiansPage() {
     .returns<Guardian[]>();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
           保護者・関係者

@@ -17,7 +17,7 @@ import {
   createAthlete,
   updateAthlete,
   type AthleteFormState,
-} from "@/app/dashboard/actions";
+} from "@/app/dashboard/athletes/actions";
 import type { Athlete } from "@/app/dashboard/types";
 
 const initialState: AthleteFormState = {};

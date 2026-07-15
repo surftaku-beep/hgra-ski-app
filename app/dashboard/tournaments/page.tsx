@@ -41,7 +41,7 @@ export default async function TournamentsPage() {
     .returns<Tournament[]>();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">大会・遠征</h1>
         <p className="text-muted-foreground text-sm">

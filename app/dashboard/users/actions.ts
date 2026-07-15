@@ -33,17 +33,17 @@ export async function inviteUser(
 
   // service_role clientはRLSを完全にバイパスするため、
   // 呼び出し元のロールをここで必ず自前チェックする。
+  // ユーザーの招待・作成はadminのみに限定する(coachには許可しない)。
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   const callerRole = await getUserRole(supabase, user?.id);
 
-  if (callerRole !== "admin" && callerRole !== "coach") {
-    return { error: "この操作を行う権限がありません。" };
-  }
-  if (role === "admin" && callerRole !== "admin") {
-    return { error: "管理者(admin)ロールの付与はadminのみ行えます。" };
+  if (callerRole !== "admin") {
+    return {
+      error: "403 Forbidden: ユーザーの招待はadminのみ行えます。",
+    };
   }
 
   // 選手ロールの場合、対象の選手が既に別アカウントと紐付いていないか確認する
@@ -110,4 +110,57 @@ export async function inviteUser(
 
   revalidatePath("/dashboard/users");
   return { success: true };
+}
+
+export async function deleteUser(id: string): Promise<{ error?: string }> {
+  // service_role clientはRLSを完全にバイパスするため、
+  // 呼び出し元のロールをここで必ず自前チェックする。
+  // ユーザーの削除はadminのみに限定する(coachには許可しない)。
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const callerRole = await getUserRole(supabase, user?.id);
+
+  if (callerRole !== "admin") {
+    return { error: "403 Forbidden: ユーザーの削除はadminのみ行えます。" };
+  }
+
+  if (user?.id === id) {
+    return { error: "自分自身のアカウントは削除できません。" };
+  }
+
+  let adminClient;
+  try {
+    adminClient = createAdminClient();
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "不明なエラーです。";
+    console.error("[deleteUser] admin client init failed:", message);
+    return { error: message };
+  }
+
+  // 選手との紐付けを解除してからアカウントを削除する
+  const { error: unlinkError } = await supabase
+    .from("athletes")
+    .update({ user_id: null })
+    .eq("user_id", id);
+
+  if (unlinkError) {
+    console.error("[deleteUser] athlete unlink failed:", unlinkError);
+    return {
+      error: `選手データの紐付け解除に失敗しました: ${unlinkError.message}`,
+    };
+  }
+
+  const { error: deleteError } = await adminClient.auth.admin.deleteUser(id);
+
+  if (deleteError) {
+    console.error("[deleteUser] deleteUser failed:", deleteError);
+    return {
+      error: `ユーザーの削除に失敗しました: ${deleteError.message}`,
+    };
+  }
+
+  revalidatePath("/dashboard/users");
+  return {};
 }
