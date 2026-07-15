@@ -17,7 +17,7 @@ type TimelineItem = {
   type: TimelineItemType;
   title: string;
   date: string;
-  href: string;
+  href?: string;
   description?: string | null;
 };
 
@@ -102,7 +102,6 @@ export default async function DashboardHomePage() {
         type: "schedule",
         title: entry.title,
         date: entry.start_at,
-        href: "/dashboard/schedule",
       }),
     ),
     ...(evaluations ?? []).map(
@@ -160,12 +159,16 @@ export default async function DashboardHomePage() {
                     {TYPE_LABELS[item.type]}
                   </Badge>
                   <div className="min-w-0 flex-1">
-                    <Link
-                      href={item.href}
-                      className="font-medium hover:underline"
-                    >
-                      {item.title}
-                    </Link>
+                    {item.href ? (
+                      <Link
+                        href={item.href}
+                        className="font-medium hover:underline"
+                      >
+                        {item.title}
+                      </Link>
+                    ) : (
+                      <p className="font-medium">{item.title}</p>
+                    )}
                     <p className="text-muted-foreground text-xs">
                       {formatDateTime(item.date)}
                     </p>
