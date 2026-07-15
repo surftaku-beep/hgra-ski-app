@@ -90,7 +90,10 @@ export function TournamentFormDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={trigger} />
-      <DialogContent>
+      <DialogContent
+        className="max-h-[85vh] overflow-y-auto overflow-x-hidden"
+        style={{ maxHeight: "85vh", overflowY: "auto" }}
+      >
         <DialogHeader>
           <DialogTitle>
             {mode === "create" ? "大会を登録" : "大会情報を編集"}
