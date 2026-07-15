@@ -29,7 +29,6 @@ const MANAGEMENT_MENU: NavItem[] = [
   { href: "/dashboard/athletes", label: "選手" },
   { href: "/dashboard/tournaments", label: "大会" },
   { href: "/dashboard/guardians", label: "保護者" },
-  { href: "/dashboard/schedule", label: "スケジュール" },
   { href: "/dashboard/news", label: "ニュース管理" },
   { href: "/dashboard/team-profile", label: "チーム紹介編集" },
   { href: "/dashboard/gantt", label: "大会スケジュール" },
