@@ -130,9 +130,17 @@ export default async function HomePage() {
           sizes="100vw"
           className="object-cover object-center"
         />
-        {/* 紫のトーンを保つ半透明レイヤー: 全体の膜 + 下部を濃くして文字を読みやすくする */}
-        <div className="absolute inset-0 bg-purple-950/70" />
-        <div className="absolute inset-0 bg-gradient-to-t from-purple-950/90 via-purple-900/40 to-transparent" />
+        {teamProfile?.hero_image_url ? (
+          // ヒーロー画像が設定されている場合は紫の全面オーバーレイは無効にし、
+          // 下部のテキスト可読性のためだけの軽い暗転グラデーションのみ入れる
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+        ) : (
+          // 画像未設定時のフォールバック(ロゴ画像)向け: 紫のトーンを保つ半透明レイヤー
+          <>
+            <div className="absolute inset-0 bg-purple-950/70" />
+            <div className="absolute inset-0 bg-gradient-to-t from-purple-950/90 via-purple-900/40 to-transparent" />
+          </>
+        )}
         <div className="absolute inset-0 flex flex-col justify-end p-8">
           {teamProfile?.mission_statement ? (
             <p className="max-w-xl text-sm text-white/80">
