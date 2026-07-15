@@ -36,16 +36,13 @@ export type Guardian = {
 export const TOURNAMENT_GRADES = ["FIS", "A", "A(YH)", "B", "B(YT)"] as const;
 export type TournamentGrade = (typeof TOURNAMENT_GRADES)[number];
 
-export const TOURNAMENT_AGE_CATEGORIES = [
-  "キッズ U8",
-  "キッズ U10",
-  "ユース K1",
-  "ユース K2",
-  "SAJ一般（少年）",
-  "SAJ一般（成年）",
-  "マスターズ",
-] as const;
-export type TournamentAgeCategory = (typeof TOURNAMENT_AGE_CATEGORIES)[number];
+export const TOURNAMENT_DAY_DISCIPLINES = ["SG", "GS", "SL", "PGS"] as const;
+export type TournamentDayDiscipline = (typeof TOURNAMENT_DAY_DISCIPLINES)[number];
+
+export const TOURNAMENT_DAY_GENDERS = ["Men", "Woman"] as const;
+export type TournamentDayGender = (typeof TOURNAMENT_DAY_GENDERS)[number];
+
+export const TOURNAMENT_MAX_DAYS = 10;
 
 export type Tournament = {
   id: string;
@@ -55,7 +52,16 @@ export type Tournament = {
   location: string | null;
   description: string | null;
   grade: string | null;
-  age_category: string | null;
+  tournament_url: string | null;
+};
+
+export type TournamentDay = {
+  id: string;
+  tournament_id: string;
+  day_index: number;
+  event_date: string | null;
+  discipline: string | null;
+  gender: string | null;
 };
 
 export type EntryType = "athlete" | "guardian_chaperone" | "coach_chaperone";

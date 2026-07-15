@@ -26,6 +26,7 @@ import type {
   CoachDirectoryEntry,
   Guardian,
   Tournament,
+  TournamentDay,
   TournamentEntry,
 } from "@/app/dashboard/types";
 
@@ -53,7 +54,7 @@ export async function TournamentDetailPanel({
   const { data: tournament } = await supabase
     .from("tournaments")
     .select(
-      "id, name, start_date, end_date, location, description, grade, age_category",
+      "id, name, start_date, end_date, location, description, grade, tournament_url",
     )
     .eq("id", tournamentId)
     .maybeSingle<Tournament>();
@@ -71,6 +72,7 @@ export async function TournamentDetailPanel({
     { data: athletes },
     { data: guardians },
     { data: coaches },
+    { data: tournamentDays },
   ] = await Promise.all([
     supabase
       .from("tournament_entries")
@@ -90,7 +92,15 @@ export async function TournamentDetailPanel({
       .order("name")
       .returns<Guardian[]>(),
     supabase.rpc("get_coach_directory"),
+    supabase
+      .from("tournament_days")
+      .select("id, tournament_id, day_index, event_date, discipline, gender")
+      .eq("tournament_id", tournamentId)
+      .order("day_index")
+      .returns<TournamentDay[]>(),
   ]);
+
+  const days = tournamentDays ?? [];
 
   const entryList = entries ?? [];
   const athleteEntries = entryList.filter(
@@ -166,16 +176,62 @@ export async function TournamentDetailPanel({
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground text-xs">対象カテゴリ</p>
+              <p className="text-muted-foreground text-xs">大会URL</p>
               <p className="mt-0.5">
-                {tournament.age_category ? (
-                  <Badge variant="secondary">{tournament.age_category}</Badge>
+                {tournament.tournament_url ? (
+                  <a
+                    href={tournament.tournament_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    {tournament.tournament_url}
+                  </a>
                 ) : (
                   "-"
                 )}
               </p>
             </div>
           </div>
+
+          {days.length > 0 ? (
+            <div>
+              <p className="text-muted-foreground text-xs">日程</p>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>日目</TableHead>
+                    <TableHead>日付</TableHead>
+                    <TableHead>競技</TableHead>
+                    <TableHead>男女</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {days.map((day) => (
+                    <TableRow key={day.id}>
+                      <TableCell>{day.day_index}日目</TableCell>
+                      <TableCell>{formatDate(day.event_date)}</TableCell>
+                      <TableCell>
+                        {day.discipline ? (
+                          <Badge variant="secondary">{day.discipline}</Badge>
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {day.gender ? (
+                          <Badge variant="secondary">{day.gender}</Badge>
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : null}
+
           {tournament.description ? (
             <div>
               <p className="text-muted-foreground text-xs">概要・メモ</p>

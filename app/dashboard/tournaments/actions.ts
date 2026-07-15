@@ -2,6 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
+import { TOURNAMENT_MAX_DAYS } from "@/app/dashboard/types";
+
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
 export type TournamentFormState = {
   error?: string;
@@ -22,6 +25,64 @@ function normalizeSelect(value: FormDataEntryValue | null) {
   return trimmed;
 }
 
+// day_1_date/day_1_discipline/day_1_gender ... day_10_* から、
+// 日付が入力された行だけをtournament_daysへの保存用データに変換する
+function buildTournamentDays(formData: FormData, tournamentId: string) {
+  const days: {
+    tournament_id: string;
+    day_index: number;
+    event_date: string;
+    discipline: string | null;
+    gender: string | null;
+  }[] = [];
+
+  for (let dayNumber = 1; dayNumber <= TOURNAMENT_MAX_DAYS; dayNumber++) {
+    const eventDate = normalizeOptional(formData.get(`day_${dayNumber}_date`));
+    if (!eventDate) continue;
+
+    days.push({
+      tournament_id: tournamentId,
+      day_index: dayNumber,
+      event_date: eventDate,
+      discipline: normalizeSelect(formData.get(`day_${dayNumber}_discipline`)),
+      gender: normalizeSelect(formData.get(`day_${dayNumber}_gender`)),
+    });
+  }
+
+  return days;
+}
+
+async function saveTournamentDays(
+  supabase: SupabaseServerClient,
+  tournamentId: string,
+  formData: FormData,
+) {
+  // 差分更新ではなく、常に全件入れ替える(最大10行なのでコストは無視できる)
+  const { error: deleteError } = await supabase
+    .from("tournament_days")
+    .delete()
+    .eq("tournament_id", tournamentId);
+
+  if (deleteError) {
+    return `日程の保存に失敗しました: ${deleteError.message}`;
+  }
+
+  const days = buildTournamentDays(formData, tournamentId);
+  if (days.length === 0) {
+    return null;
+  }
+
+  const { error: insertError } = await supabase
+    .from("tournament_days")
+    .insert(days);
+
+  if (insertError) {
+    return `日程の保存に失敗しました: ${insertError.message}`;
+  }
+
+  return null;
+}
+
 export async function createTournament(
   _prevState: TournamentFormState,
   formData: FormData,
@@ -34,19 +95,29 @@ export async function createTournament(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("tournaments").insert({
-    name,
-    start_date: startDate,
-    end_date: normalizeOptional(formData.get("end_date")),
-    location: normalizeOptional(formData.get("location")),
-    description: normalizeOptional(formData.get("description")),
-    grade: normalizeSelect(formData.get("grade")),
-    age_category: normalizeSelect(formData.get("age_category")),
-  });
+  const { data, error } = await supabase
+    .from("tournaments")
+    .insert({
+      name,
+      start_date: startDate,
+      end_date: normalizeOptional(formData.get("end_date")),
+      location: normalizeOptional(formData.get("location")),
+      description: normalizeOptional(formData.get("description")),
+      grade: normalizeSelect(formData.get("grade")),
+      tournament_url: normalizeOptional(formData.get("tournament_url")),
+    })
+    .select("id")
+    .single();
 
-  if (error) {
+  if (error || !data) {
     console.error("[createTournament] failed:", error);
-    return { error: `登録に失敗しました: ${error.message}` };
+    return { error: `登録に失敗しました: ${error?.message ?? "不明なエラー"}` };
+  }
+
+  const daysError = await saveTournamentDays(supabase, data.id, formData);
+  if (daysError) {
+    console.error("[createTournament] tournament_days failed:", daysError);
+    return { error: daysError };
   }
 
   revalidatePath("/dashboard/tournaments");
@@ -79,13 +150,19 @@ export async function updateTournament(
       location: normalizeOptional(formData.get("location")),
       description: normalizeOptional(formData.get("description")),
       grade: normalizeSelect(formData.get("grade")),
-      age_category: normalizeSelect(formData.get("age_category")),
+      tournament_url: normalizeOptional(formData.get("tournament_url")),
     })
     .eq("id", id);
 
   if (error) {
     console.error("[updateTournament] failed:", error);
     return { error: `更新に失敗しました: ${error.message}` };
+  }
+
+  const daysError = await saveTournamentDays(supabase, id, formData);
+  if (daysError) {
+    console.error("[updateTournament] tournament_days failed:", daysError);
+    return { error: daysError };
   }
 
   revalidatePath("/dashboard/tournaments");

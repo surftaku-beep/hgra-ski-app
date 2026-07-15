@@ -6,7 +6,7 @@ import { DeleteTournamentButton } from "@/components/delete-tournament-button";
 import { TournamentDetailPanel } from "@/components/tournament-detail-panel";
 import { createClient } from "@/utils/supabase/server";
 import { getIsCoachOrAdmin } from "@/utils/supabase/role";
-import type { Tournament } from "@/app/dashboard/types";
+import type { Tournament, TournamentDay } from "@/app/dashboard/types";
 
 export default async function TournamentDetailPage({
   params,
@@ -21,13 +21,21 @@ export default async function TournamentDetailPage({
   } = await supabase.auth.getUser();
   const isCoachOrAdmin = await getIsCoachOrAdmin(supabase, user?.id);
 
-  const { data: tournament } = await supabase
-    .from("tournaments")
-    .select(
-      "id, name, start_date, end_date, location, description, grade, age_category",
-    )
-    .eq("id", id)
-    .maybeSingle<Tournament>();
+  const [{ data: tournament }, { data: tournamentDays }] = await Promise.all([
+    supabase
+      .from("tournaments")
+      .select(
+        "id, name, start_date, end_date, location, description, grade, tournament_url",
+      )
+      .eq("id", id)
+      .maybeSingle<Tournament>(),
+    supabase
+      .from("tournament_days")
+      .select("id, tournament_id, day_index, event_date, discipline, gender")
+      .eq("tournament_id", id)
+      .order("day_index")
+      .returns<TournamentDay[]>(),
+  ]);
 
   if (!tournament) {
     notFound();
@@ -51,6 +59,7 @@ export default async function TournamentDetailPage({
               <TournamentFormDialog
                 mode="edit"
                 tournament={tournament}
+                days={tournamentDays ?? []}
                 trigger={
                   <Button variant="outline" size="sm">
                     大会情報を編集

@@ -20,7 +20,7 @@ import { TournamentFormDialog } from "@/components/tournament-form-dialog";
 import { DeleteTournamentButton } from "@/components/delete-tournament-button";
 import { createClient } from "@/utils/supabase/server";
 import { getIsCoachOrAdmin } from "@/utils/supabase/role";
-import type { Tournament } from "@/app/dashboard/types";
+import type { Tournament, TournamentDay } from "@/app/dashboard/types";
 
 function formatDate(date: string | null) {
   return date ? date.replaceAll("-", "/") : "-";
@@ -36,9 +36,29 @@ export default async function TournamentsPage() {
 
   const { data: tournaments, error } = await supabase
     .from("tournaments")
-    .select("id, name, start_date, end_date, location")
+    .select(
+      "id, name, start_date, end_date, location, description, grade, tournament_url",
+    )
     .order("start_date", { ascending: false })
     .returns<Tournament[]>();
+
+  const tournamentIds = (tournaments ?? []).map((tournament) => tournament.id);
+  const { data: allTournamentDays } =
+    tournamentIds.length > 0
+      ? await supabase
+          .from("tournament_days")
+          .select("id, tournament_id, day_index, event_date, discipline, gender")
+          .in("tournament_id", tournamentIds)
+          .order("day_index")
+          .returns<TournamentDay[]>()
+      : { data: [] as TournamentDay[] };
+
+  const daysByTournamentId = new Map<string, TournamentDay[]>();
+  for (const day of allTournamentDays ?? []) {
+    const existing = daysByTournamentId.get(day.tournament_id) ?? [];
+    existing.push(day);
+    daysByTournamentId.set(day.tournament_id, existing);
+  }
 
   return (
     <div className="space-y-10">
@@ -112,6 +132,7 @@ export default async function TournamentsPage() {
                           <TournamentFormDialog
                             mode="edit"
                             tournament={tournament}
+                            days={daysByTournamentId.get(tournament.id) ?? []}
                             trigger={
                               <Button variant="ghost" size="sm">
                                 編集

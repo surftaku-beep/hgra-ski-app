@@ -136,15 +136,15 @@ create table if not exists public.guardians (
 -- 6. tournaments (大会・遠征マスタ)
 -- ---------------------------------------------------------
 create table if not exists public.tournaments (
-  id           uuid primary key default gen_random_uuid(),
-  name         text not null,
-  start_date   date,
-  end_date     date,
-  location     text,
-  description  text,        -- 大会の概要・メモ
-  grade        text,        -- 'FIS', 'A', 'A(YH)', 'B', 'B(YT)'
-  age_category text,        -- 'キッズ U8' など対象カテゴリ
-  created_at   timestamptz not null default now()
+  id             uuid primary key default gen_random_uuid(),
+  name           text not null,
+  start_date     date,
+  end_date       date,
+  location       text,
+  description    text,        -- 大会の概要・メモ
+  grade          text,        -- 'FIS', 'A', 'A(YH)', 'B', 'B(YT)'
+  tournament_url text,        -- 大会要項・公式サイトなどのURL
+  created_at     timestamptz not null default now()
 );
 
 -- 既存プロジェクトでこのスクリプトを再実行した場合に備え、
@@ -152,7 +152,7 @@ create table if not exists public.tournaments (
 -- 既存の大会データはこれらのカラムがNULLのままでもエラーにならない。
 alter table public.tournaments add column if not exists description text;
 alter table public.tournaments add column if not exists grade text;
-alter table public.tournaments add column if not exists age_category text;
+alter table public.tournaments add column if not exists tournament_url text;
 
 -- CHECK制約は "ADD CONSTRAINT IF NOT EXISTS" が使えないため、
 -- DROP → ADD で冪等に定義し直す。NULLは許容する。
@@ -161,12 +161,22 @@ alter table public.tournaments add constraint tournaments_grade_check check (
   grade is null or grade in ('FIS', 'A', 'A(YH)', 'B', 'B(YT)')
 );
 
-alter table public.tournaments drop constraint if exists tournaments_age_category_check;
-alter table public.tournaments add constraint tournaments_age_category_check check (
-  age_category is null or age_category in (
-    'キッズ U8', 'キッズ U10', 'ユース K1', 'ユース K2',
-    'SAJ一般（少年）', 'SAJ一般（成年）', 'マスターズ'
-  )
+-- 対象カテゴリ(age_category)はUIから削除したが、既存データを消さないため
+-- カラム自体は残す(新規のINSERT/UPDATEでは使用しない)。
+
+-- ---------------------------------------------------------
+-- 6b. tournament_days (大会1件につき最大10日分の日程。
+--     各日にディシプリン(SG/GS/SL/PGS)と男女区分を持たせる)
+-- ---------------------------------------------------------
+create table if not exists public.tournament_days (
+  id            uuid primary key default gen_random_uuid(),
+  tournament_id uuid not null references public.tournaments (id) on delete cascade,
+  day_index     integer not null check (day_index between 1 and 10),
+  event_date    date,
+  discipline    text check (discipline is null or discipline in ('SG', 'GS', 'SL', 'PGS')),
+  gender        text check (gender is null or gender in ('Men', 'Woman')),
+  created_at    timestamptz not null default now(),
+  unique (tournament_id, day_index)
 );
 
 -- ---------------------------------------------------------
@@ -477,6 +487,7 @@ alter table public.race_results       enable row level security;
 alter table public.evaluations        enable row level security;
 alter table public.guardians          enable row level security;
 alter table public.tournaments        enable row level security;
+alter table public.tournament_days    enable row level security;
 alter table public.tournament_entries enable row level security;
 alter table public.news               enable row level security;
 alter table public.personal_schedule  enable row level security;
@@ -580,6 +591,15 @@ create policy "coach_or_admin_all_guardians"
 drop policy if exists "coach_or_admin_all_tournaments" on public.tournaments;
 create policy "coach_or_admin_all_tournaments"
   on public.tournaments
+  for all
+  to authenticated
+  using (public.is_coach_or_admin())
+  with check (public.is_coach_or_admin());
+
+-- --- tournament_days ---
+drop policy if exists "coach_or_admin_all_tournament_days" on public.tournament_days;
+create policy "coach_or_admin_all_tournament_days"
+  on public.tournament_days
   for all
   to authenticated
   using (public.is_coach_or_admin())
@@ -709,6 +729,7 @@ grant select, insert, update, delete on public.race_results       to authenticat
 grant select, insert, update, delete on public.evaluations        to authenticated;
 grant select, insert, update, delete on public.guardians          to authenticated;
 grant select, insert, update, delete on public.tournaments        to authenticated;
+grant select, insert, update, delete on public.tournament_days    to authenticated;
 grant select, insert, update, delete on public.tournament_entries to authenticated;
 grant select, insert, update, delete on public.news               to authenticated;
 grant select, insert, update, delete on public.personal_schedule  to authenticated;

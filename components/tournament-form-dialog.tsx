@@ -27,27 +27,53 @@ import {
   type TournamentFormState,
 } from "@/app/dashboard/tournaments/actions";
 import {
-  TOURNAMENT_AGE_CATEGORIES,
+  TOURNAMENT_DAY_DISCIPLINES,
+  TOURNAMENT_DAY_GENDERS,
   TOURNAMENT_GRADES,
+  TOURNAMENT_MAX_DAYS,
   type Tournament,
+  type TournamentDay,
 } from "@/app/dashboard/types";
 
 const initialState: TournamentFormState = {};
 
+function dayFieldName(dayNumber: number, field: "date" | "discipline" | "gender") {
+  return `day_${dayNumber}_${field}`;
+}
+
 export function TournamentFormDialog({
   mode,
   tournament,
+  days,
   trigger,
 }: {
   mode: "create" | "edit";
   tournament?: Tournament;
+  days?: TournamentDay[];
   trigger: ReactElement;
 }) {
   const [open, setOpen] = useState(false);
   const [grade, setGrade] = useState(tournament?.grade ?? "unset");
-  const [ageCategory, setAgeCategory] = useState(
-    tournament?.age_category ?? "unset",
+  const dayByIndex = new Map((days ?? []).map((day) => [day.day_index, day]));
+  const [dayValues, setDayValues] = useState(() =>
+    Array.from({ length: TOURNAMENT_MAX_DAYS }, (_, i) => {
+      const day = dayByIndex.get(i + 1);
+      return {
+        discipline: day?.discipline ?? "unset",
+        gender: day?.gender ?? "unset",
+      };
+    }),
   );
+
+  function updateDayValue(
+    index: number,
+    patch: Partial<{ discipline: string; gender: string }>,
+  ) {
+    setDayValues((prev) =>
+      prev.map((value, i) => (i === index ? { ...value, ...patch } : value)),
+    );
+  }
+
   const action = mode === "create" ? createTournament : updateTournament;
   const [state, formAction, pending] = useActionState(action, initialState);
 
@@ -118,47 +144,105 @@ export function TournamentFormDialog({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="grade">グレード</Label>
-              <Select
-                name="grade"
-                value={grade}
-                onValueChange={(value) => setGrade(value ?? "unset")}
-              >
-                <SelectTrigger id="grade" className="w-full">
-                  <SelectValue placeholder="選択してください" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unset">未設定</SelectItem>
-                  {TOURNAMENT_GRADES.map((grade) => (
-                    <SelectItem key={grade} value={grade}>
-                      {grade}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="space-y-2">
+            <Label htmlFor="grade">グレード</Label>
+            <Select
+              name="grade"
+              value={grade}
+              onValueChange={(value) => setGrade(value ?? "unset")}
+            >
+              <SelectTrigger id="grade" className="w-full">
+                <SelectValue placeholder="選択してください" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unset">未設定</SelectItem>
+                {TOURNAMENT_GRADES.map((grade) => (
+                  <SelectItem key={grade} value={grade}>
+                    {grade}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>日程(最大{TOURNAMENT_MAX_DAYS}日分)</Label>
+            <div className="max-h-64 space-y-2 overflow-y-auto rounded-md border p-3">
+              {Array.from({ length: TOURNAMENT_MAX_DAYS }, (_, i) => i + 1).map(
+                (dayNumber) => {
+                  const existing = dayByIndex.get(dayNumber);
+                  const values = dayValues[dayNumber - 1];
+                  return (
+                    <div
+                      key={dayNumber}
+                      className="grid grid-cols-[2.5rem_1fr_1fr_1fr] items-center gap-2"
+                    >
+                      <span className="text-xs text-muted-foreground">
+                        {dayNumber}日目
+                      </span>
+                      <Input
+                        type="date"
+                        name={dayFieldName(dayNumber, "date")}
+                        defaultValue={existing?.event_date ?? ""}
+                      />
+                      <Select
+                        name={dayFieldName(dayNumber, "discipline")}
+                        value={values.discipline}
+                        onValueChange={(value) =>
+                          updateDayValue(dayNumber - 1, {
+                            discipline: value ?? "unset",
+                          })
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="競技" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unset">未設定</SelectItem>
+                          {TOURNAMENT_DAY_DISCIPLINES.map((discipline) => (
+                            <SelectItem key={discipline} value={discipline}>
+                              {discipline}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        name={dayFieldName(dayNumber, "gender")}
+                        value={values.gender}
+                        onValueChange={(value) =>
+                          updateDayValue(dayNumber - 1, {
+                            gender: value ?? "unset",
+                          })
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="男女" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unset">未設定</SelectItem>
+                          {TOURNAMENT_DAY_GENDERS.map((gender) => (
+                            <SelectItem key={gender} value={gender}>
+                              {gender}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  );
+                },
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="age_category">対象カテゴリ</Label>
-              <Select
-                name="age_category"
-                value={ageCategory}
-                onValueChange={(value) => setAgeCategory(value ?? "unset")}
-              >
-                <SelectTrigger id="age_category" className="w-full">
-                  <SelectValue placeholder="選択してください" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unset">未設定</SelectItem>
-                  {TOURNAMENT_AGE_CATEGORIES.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tournament_url">大会URL</Label>
+            <Input
+              id="tournament_url"
+              name="tournament_url"
+              type="url"
+              placeholder="https://..."
+              defaultValue={tournament?.tournament_url ?? ""}
+            />
           </div>
 
           <div className="space-y-2">
